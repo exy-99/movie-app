@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { Image } from "react-native";
+import { Image, Text, View } from "react-native";
 
 const Tabicon = ({
   icon,
@@ -14,14 +14,36 @@ const Tabicon = ({
   focused: boolean;
 }) => {
   return (
-    <view className="justify-center items-center gap-1">
+    <View className="justify-center items-center gap-1">
       <Image
         source={icon}
         resizeMode="contain"
         tintColor={color}
-        className="w-6 h-"
+        className="w-6 h-6"
       />
-    </view>
+      {focused && (
+        <Text className="font-semibold text-xs" style={{ color: color }}>
+          {name}
+        </Text>
+      )}
+    </View>
+  );
+};
+const Tabslayout = () => {
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarShowLabel: false,
+        tabBarActiveTintColor: "#161622",
+        tabBarInactiveTintColor: "#CDCDE0",
+        tabBarStyle: {
+          backgroundColor: "#ffffff",
+          borderTopWidth: 1,
+          borderTopColor: "#f3f3f3",
+          height: 84,
+        },
+      }}
+    />
   );
 };
 
@@ -33,7 +55,6 @@ const _layout = () => {
         options={{
           title: "Home",
           headerShown: false,
-          tabBarIcon: ({ focused }) => <></>,
         }}
       />
       <Tabs.Screen

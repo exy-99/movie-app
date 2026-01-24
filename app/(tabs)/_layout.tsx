@@ -2,7 +2,7 @@ import { Tabs } from "expo-router";
 import React from "react";
 import { Image, Text, View } from "react-native";
 
-const Tabicon = ({
+const TabIcon = ({
   icon,
   color,
   name,
@@ -14,22 +14,27 @@ const Tabicon = ({
   focused: boolean;
 }) => {
   return (
-    <View className="justify-center items-center gap-1">
+    <View className=" flex-row justify-center items-center gap-1 ">
       <Image
         source={icon}
         resizeMode="contain"
         tintColor={color}
-        className="w-6 h-6"
+        className="w-7 h-7"
       />
       {focused && (
-        <Text className="font-semibold text-xs" style={{ color: color }}>
+        <Text
+          className={`font-semibold text-xs ${focused ? "" : "opacity-0"}`}
+          style={{ color: color }}
+          numberOfLines={1}
+        >
           {name}
         </Text>
       )}
     </View>
   );
 };
-const Tabslayout = () => {
+
+const TabsLayout = () => {
   return (
     <Tabs
       screenOptions={{
@@ -38,25 +43,19 @@ const Tabslayout = () => {
         tabBarInactiveTintColor: "#CDCDE0",
         tabBarStyle: {
           backgroundColor: "#ffffff",
-          borderTopWidth: 1,
+          borderTopWidth: 0.5,
           borderTopColor: "#000000",
-          height: 840,
+          height: 84,
         },
       }}
-    />
-  );
-};
-
-const _layout = () => {
-  return (
-    <Tabs>
+    >
       <Tabs.Screen
         name="index"
         options={{
           title: "Home",
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
-            <Tabicon
+            <TabIcon
               icon={require("../../assets/icons/home.png")}
               color={color}
               name="Home"
@@ -71,7 +70,7 @@ const _layout = () => {
           title: "Search",
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
-            <Tabicon
+            <TabIcon
               icon={require("../../assets/icons/search.png")}
               color={color}
               name="Search"
@@ -86,7 +85,7 @@ const _layout = () => {
           title: "Saved",
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
-            <Tabicon
+            <TabIcon
               icon={require("../../assets/icons/saved.png")}
               color={color}
               name="Saved"
@@ -101,7 +100,7 @@ const _layout = () => {
           title: "Profile",
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
-            <Tabicon
+            <TabIcon
               icon={require("../../assets/icons/profile.png")}
               color={color}
               name="Profile"
@@ -110,12 +109,8 @@ const _layout = () => {
           ),
         }}
       />
-      <Tabs.Screen
-        name="movie/[id]"
-        options={{ href: null, headerShown: false }}
-      />
     </Tabs>
   );
 };
 
-export default _layout;
+export default TabsLayout;

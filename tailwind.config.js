@@ -10,7 +10,17 @@ module.exports = {
 
   theme: {
 
-    extend: {},
+    extend: {
+      fontFamily: {
+        serif: ["PlayfairDisplay_400Regular", "serif"],
+        sans: ["Lato_400Regular", "sans-serif"],
+        playfair: ["PlayfairDisplay_400Regular", "serif"],
+        playfairBold: ["PlayfairDisplay_700Bold", "serif"],
+        lato: ["Lato_400Regular", "sans-serif"],
+        latoBold: ["Lato_700Bold", "sans-serif"],
+        hennyPenny: ["HennyPenny_400Regular", "cursive"],
+      },
+    },
 
   },
 

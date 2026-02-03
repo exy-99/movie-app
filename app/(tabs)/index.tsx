@@ -1,45 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { Stack } from "expo-router";
 import React from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Dimensions, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FeaturedMovie } from "../../components/FeaturedMovie";
-import { MovieList } from "../../components/MovieList";
-
-// Dummy Data
-const FEATURED_MOVIE = {
-  title: "GREENLAND 2",
-  year: "2026",
-  country: "USA",
-  genre: "thriller",
-  description:
-    "In the aftermath of a comet strike that decimated most of the planet, the Garrity family must leave the safety of their Greenland bunker to traverse a shattered world in search of a new home.",
-  duration: "2h 15m",
-  image: { uri: "https://image.tmdb.org/t/p/w500/abf8tHznhSvl9BAlJXjF8xeJMjE.jpg" }, // Using a real-ish looking placeholder or real URL if compatible
-};
-
-const LATEST_MOVIES = [
-  {
-    id: "1",
-    title: "Anaconda",
-    image: { uri: "https://image.tmdb.org/t/p/w500/8j58iSEQqpr027OxJD1P5D42BOi.jpg" },
-  },
-  {
-    id: "2",
-    title: "Zootopia 2",
-    image: { uri: "https://image.tmdb.org/t/p/w500/7M5e0eE5fF3b9gG6f6fF4h6h6.jpg" }, // distinct validish url or placeholder
-  },
-  {
-    id: "3",
-    title: "Avatar: Fire and Ash",
-    image: { uri: "https://image.tmdb.org/t/p/w500/t6HIqrRAclMCA60NSSmgqi9Ur7e.jpg" },
-  },
-  {
-    id: "4",
-    title: "The Housemaid",
-    image: { uri: "https://image.tmdb.org/t/p/w500/s9Y3h3e3f3f3f3f3f3f3.jpg" }, // placeholder
-  },
-];
+// Removed RankedHero import as we are implementing directly
+// import { RankedHero } from "@/components/RankedHero";
 
 export default function Home() {
   const [menuVisible, setMenuVisible] = React.useState(false);
@@ -49,66 +15,130 @@ export default function Home() {
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Header */}
-      <View className="px-5 py-4 flex-row justify-between items-center border-b border-gray-100 mb-2 z-50">
-        <Text className="text-3xl font-hennyPenny text-black">WatchMe</Text>
-        <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)}>
-          <Ionicons name={menuVisible ? "close-outline" : "menu-outline"} size={32} color="black" />
-        </TouchableOpacity>
+      <View className="px-5 pt-6 bg-white z-50">
+        <View className="flex-row justify-between items-end mb-1">
+          <Text className="text-4xl font-hennyPenny text-black leading-10 mt-2">
+            WatchMe
+          </Text>
+
+          {!menuVisible && (
+            <TouchableOpacity onPress={() => setMenuVisible(true)} className="mb-2">
+              <Ionicons name="menu" size={32} color="black" />
+            </TouchableOpacity>
+          )}
+        </View>
+        <View className="h-[1px] bg-black w-full mt-2" />
       </View>
 
-      {/* Dropdown Menu */}
+      {/* Floating Menu Overlay */}
       {menuVisible && (
-        <View className="absolute top-20 right-5 bg-white shadow-xl rounded-xl p-4 w-48 z-50 border border-gray-200">
-          <TouchableOpacity className="py-3 border-b border-gray-100 flex-row items-center">
-            <Ionicons name="person-outline" size={20} color="#333" />
-            <Text className="ml-3 font-lato text-gray-700">Profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity className="py-3 border-b border-gray-100 flex-row items-center">
-            <Ionicons name="settings-outline" size={20} color="#333" />
-            <Text className="ml-3 font-lato text-gray-700">Settings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity className="py-3 flex-row items-center">
-            <Ionicons name="help-circle-outline" size={20} color="#333" />
-            <Text className="ml-3 font-lato text-gray-700">Help</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        <BlurView
+          intensity={100}
+          tint="light"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 40,
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setMenuVisible(false)}
+            style={{ position: 'absolute', width: '100%', height: '100%' }}
+          />
 
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        {/* Top Watched Section */}
-        <View className="mt-4 mb-2">
-          <View className="flex-row items-start mb-4">
-            <View className="border-l-2 border-gray-400 pl-3">
-              <Text className="text-2xl text-gray-700 font-playfair">Top Watched</Text>
+          <View className="w-full max-w-sm rounded-3xl shadow-2xl bg-white/90 border border-white/50 p-8" style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
+            {/* Close Button Inside */}
+            <View className="flex-row justify-center mb-6">
+              <TouchableOpacity onPress={() => setMenuVisible(false)} className="p-3 bg-gray-100 rounded-full">
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Navigation Items */}
+            <View className="space-y-6 items-center">
+              {['Home', 'Movies', 'Series', 'My List', 'Profile'].map((item) => (
+                <TouchableOpacity key={item} onPress={() => setMenuVisible(false)} className="border-b border-gray-100 pb-2 w-full items-center">
+                  <Text className="text-3xl font-playfairBold text-slate-900 tracking-wider">
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity className="pt-4">
+                <Text className="text-sm font-lato text-gray-400 uppercase tracking-widest">Settings</Text>
+              </TouchableOpacity>
             </View>
           </View>
-          <FeaturedMovie {...FEATURED_MOVIE} />
+        </BlurView>
+      )}
+
+      <ScrollView className="flex-1 bg-white" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+
+        {/* Header Title - Outside the box */}
+        <View className="px-5 pt-2 pb-2">
+          <Text className="text-4xl font-alegreyaSC text-slate-800">Top Watched</Text>
         </View>
 
-        {/* Latest Movies Section */}
-        <View className="mb-8">
-          <Text className="text-2xl text-gray-700 font-playfair mb-4 px-1">Latest Movies</Text>
-          <MovieList title="" movies={LATEST_MOVIES} />
-        </View>
+        {/* Bracketed Content Container - For Movie Info */}
+        <View className="mx-5 mb-8 relative pt-4 pb-2">
 
-        {/* Second Row/Another List (Optional based on screenshot having rows) */}
-        <View className="flex-row flex-wrap justify-between">
-          {/* Just reusing the list component data for grid view simulation or similar */}
-          {LATEST_MOVIES.map((movie) => (
-            <View key={movie.id} className="w-[48%] mb-6">
-              <View className="w-full aspect-[2/3] rounded-xl overflow-hidden mb-2 bg-gray-200">
-                <View style={{ backgroundColor: '#ccc', width: '100%', height: '100%' }}>
-                  {/* Fallback if image fails, or use actual image */}
-                  <Text className="hidden">{movie.title}</Text>
-                  <Text> </Text>
-                  {/* We need actual Image component here as well if we want grid */}
+          {/* Top Left Bracket */}
+          <View className="absolute top-0 left-0 w-8 h-8 border-l-2 border-t-2 border-slate-800" />
+
+          {/* Content Wrapper with padding */}
+          <View className="px-4 py-2">
+
+            {/* Hero Section - 30% Screen Height */}
+            <View style={{ height: Dimensions.get('window').height * 0.30 }} className="flex-row">
+
+              {/* Left: Poster Placeholder */}
+              <View className="w-[45%] h-full rounded-3xl overflow-hidden shadow-xl shadow-black/50 bg-gray-400" />
+
+              {/* Right: Info */}
+              <View className="flex-1 justify-between py-2 ml-4">
+                <View>
+                  <Text className="text-3xl font-alegreyaSC text-slate-900 leading-tight mb-2">
+                    GREENLAND 2
+                  </Text>
+
+                  <View className="flex-row items-center space-x-8 mb-3">
+                    <Text className="text-gray-400 font-lato text-base">2026</Text>
+                    <Text className="text-gray-400 font-lato text-base">USA</Text>
+                  </View>
+
+                  <View className="flex-row mb-4">
+                    <View className="border border-red-500 rounded px-2 py-0.5">
+                      <Text className="text-red-500 font-lato text-xs lowercase">thriller</Text>
+                    </View>
+                  </View>
+
+                  <Text className="text-slate-800 font-playfair leading-6 text-base" numberOfLines={6}>
+                    In the aftermath of a comet strike that decimated most of the planet, the Garrity family must leave the safety of their Greenland bunker to traverse a shattered world in search of a new home.
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-end items-end">
+                  <Text className="text-2xl font-lato text-gray-300">2h 15m</Text>
                 </View>
               </View>
-              <Text className="text-slate-800 font-bold font-lato text-base">{movie.title}</Text>
             </View>
-          ))}
+          </View>
+
+          {/* Bottom Right Bracket */}
+          <View className="absolute bottom-0 right-0 w-8 h-8 border-r-2 border-b-2 border-slate-800" />
         </View>
 
+        <View className="px-5 pt-8">
+          <Text className="text-lg font-lato text-gray-400 text-center mt-10">
+            Content area ready for new design...
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

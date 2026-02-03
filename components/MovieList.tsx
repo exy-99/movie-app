@@ -1,11 +1,14 @@
-
 import React from "react";
 import { Image, ScrollView, Text, View } from "react-native";
 
-interface Movie {
+export interface Movie {
     id: string;
     title: string;
     image: any;
+    rating: string;
+    year: string;
+    director?: string;
+    status: 'theaters' | 'streaming';
 }
 
 interface MovieListProps {
@@ -15,21 +18,26 @@ interface MovieListProps {
 
 export const MovieList: React.FC<MovieListProps> = ({ title, movies }) => {
     return (
-        <View className="mb-6">
-            <Text className="text-2xl font-playfair text-slate-700 mb-4 px-1">
+        <View className="mb-8">
+            {/* List Title - Clean with Bracket hint? Or just text */}
+            <Text className="text-xl font-playfair text-black mb-4">
                 {title}
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-1">
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {movies.map((movie) => (
-                    <View key={movie.id} className="mr-5 w-[140px]">
-                        <View className="w-full aspect-[2/3] rounded-xl overflow-hidden mb-2 bg-gray-200 shadow-sm">
+                    <View key={movie.id} className="mr-5 w-[100px]">
+                        {/* Poster */}
+                        <View className="w-full aspect-[2/3] bg-gray-200 rounded-lg overflow-hidden mb-2 shadow-sm">
                             <Image
                                 source={movie.image}
                                 className="w-full h-full"
                                 resizeMode="cover"
                             />
                         </View>
-                        <Text className="text-slate-800 font-bold font-lato text-base leading-5">
+
+                        {/* Title */}
+                        <Text className="text-sm font-lato text-black leading-4 text-center" numberOfLines={2}>
                             {movie.title}
                         </Text>
                     </View>

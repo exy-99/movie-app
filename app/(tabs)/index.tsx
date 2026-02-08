@@ -1,46 +1,52 @@
 import Header from "@/components/Header";
-import { fetchMovies, Movie } from "@/services/api";
+import SkeletonRow from "@/components/SkeletonRow";
+import { getContentRows, getHeroMovies, Movie } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, Stack } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Dimensions, FlatList, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Home() {
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Movie[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [heroMovies, setHeroMovies] = useState<Movie[]>([]);
+  const [contentRows, setContentRows] = useState<{ action: Movie[]; comedy: Movie[]; upcoming: Movie[] } | null>(null);
+  const [loadingHero, setLoadingHero] = useState(true);
+  const [loadingRows, setLoadingRows] = useState(true);
+
   const [currentHeaderIndex, setCurrentHeaderIndex] = useState(0);
-  const flatListRef = React.useRef<FlatList>(null);
+  const flatListRef = useRef<FlatList>(null);
   const { width } = Dimensions.get('window');
 
-  // 1. Fetch Data on Mount
+  // 1. Fetch Data
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      const data = await fetchMovies();
-      setMovies(data);
-      setLoading(false);
+    // Fast API: Hero
+    const loadHero = async () => {
+      setLoadingHero(true);
+      const data = await getHeroMovies();
+      setHeroMovies(data);
+      setLoadingHero(false);
     };
-    loadData();
+
+    // Slow API: Content Rows (Parallel)
+    const loadRows = async () => {
+      setLoadingRows(true);
+      const data = await getContentRows();
+      setContentRows(data);
+      setLoadingRows(false);
+    };
+
+    loadHero();
+    loadRows();
   }, []);
 
-  // 2. Client-Side Filtering & Sorting
-  const trendingMovies = useMemo(() => {
-    return movies.slice(0, 5); // Take top 5 for the slider
-  }, [movies]);
-
-  // 1.5 Auto-Play Carousel (Moved here to avoid hoisting issue)
+  // 2. Auto-Play Carousel
   useEffect(() => {
-    if (trendingMovies.length === 0) return;
+    if (heroMovies.length === 0) return;
 
     const intervalId = setInterval(() => {
       let nextIndex = currentHeaderIndex + 1;
-      if (nextIndex >= trendingMovies.length) {
+      if (nextIndex >= Math.min(heroMovies.length, 5)) {
         nextIndex = 0;
       }
 
@@ -49,22 +55,14 @@ export default function Home() {
         animated: true,
       });
       setCurrentHeaderIndex(nextIndex);
-    }, 10000); // 10 seconds
+    }, 10000);
 
     return () => clearInterval(intervalId);
-  }, [currentHeaderIndex, trendingMovies]);
-
-  const topRatedMovies = useMemo(() => {
-    return [...movies].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 10);
-  }, [movies]);
-
-  const newReleases = useMemo(() => {
-    return [...movies].sort((a, b) => b.releaseYear - a.releaseYear).slice(0, 10);
-  }, [movies]);
+  }, [currentHeaderIndex, heroMovies]);
 
   const renderMovieItem = ({ item }: { item: Movie }) => (
     <View className="mr-4 w-[160px]">
-      <Link href={`/movie/${item.imdbId || item.title}`} asChild>
+      <Link href={`/movie/${item.imdbId}`} asChild>
         <TouchableOpacity>
           <Image
             source={{ uri: item.imageSet?.verticalPoster?.w480 || 'https://via.placeholder.com/150' }}
@@ -82,7 +80,6 @@ export default function Home() {
     <View style={{ width: width, height: 550, alignItems: 'center', justifyContent: 'center' }}>
       <View className="w-[90%] h-full bg-[#121212] rounded-3xl overflow-hidden border border-[#333333] relative">
 
-        {/* Background Image with Gradient Overlay handled by container color if png transparent, else just image */}
         <Image
           source={{ uri: item.imageSet?.horizontalPoster?.w1080 || item.imageSet?.verticalPoster?.w480 || 'https://via.placeholder.com/1080x600' }}
           className="w-full h-[60%] opacity-80"
@@ -94,32 +91,25 @@ export default function Home() {
         />
 
         <View className="flex-1 px-5 pt-4 justify-start">
-          {/* FEATURED Badge */}
           <View className="self-start border border-primary px-2 py-1 rounded mb-3">
             <Text className="text-primary text-[10px] uppercase font-bold tracking-wider">Featured</Text>
           </View>
 
-          {/* Title */}
-          <Text className="text-4xl font-bold text-white leading-none mb-2 font-latoBold">
+          <Text className="text-4xl font-bold text-white leading-none mb-2 font-latoBold" numberOfLines={2}>
             {item.title}
           </Text>
 
-          {/* Metadata */}
           <View className="flex-row items-center gap-4 mb-6">
             <Text className="text-primary text-xs font-bold">{item.releaseYear}</Text>
             <Text className="text-primary text-xs font-bold">|</Text>
-            {/* Country dummy for now as api doesn't always have it, or use Genre */}
             <Text className="text-primary text-xs font-bold uppercase">{item.genres?.[0]?.name || "MOVIE"}</Text>
             <Text className="text-primary text-xs font-bold">|</Text>
-            {/* Duration dummy or from prop if available */}
-            {/* Duration using dynamic runtime */}
             <Text className="text-primary text-xs font-bold">
               {item.runtime ? `${Math.floor(item.runtime / 60)}H ${item.runtime % 60}M` : "1H 38M"}
             </Text>
           </View>
 
-          {/* Watch Button */}
-          <Link href={`/movie/${item.imdbId || item.title}`} asChild>
+          <Link href={`/movie/${item.imdbId}?title=${encodeURIComponent(item.title)}&poster=${encodeURIComponent(item.imageSet?.verticalPoster?.w480 || '')}`} asChild>
             <TouchableOpacity className="bg-primary px-6 py-3 rounded-full flex-row items-center justify-center space-x-2 w-48 shadow-[0_0_10px_rgba(132,249,6,0.6)]">
               <Ionicons name="play" size={18} color="black" />
               <Text className="text-black font-bold text-sm tracking-wide">WATCH NOW</Text>
@@ -134,25 +124,20 @@ export default function Home() {
     <SafeAreaView className="flex-1 bg-black" edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Header */}
-
-
       <ScrollView className="flex-1 bg-black" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Header */}
         <Header />
-        {loading ? (
-          <View className="mt-20">
+
+        {/* HERO SECTION (Fast API) */}
+        {loadingHero ? (
+          <View className="h-[550px] justify-center items-center">
             <ActivityIndicator size="large" color="#84f906" />
-            <Text className="text-center mt-4 text-primary">Loading Content...</Text>
           </View>
         ) : (
           <View className="pb-4 pt-8">
-            {/* Featured Hero Carousel */}
-            {/* Featured Hero Carousel */}
             <View className="w-full h-[550px] mb-8">
               <FlatList
                 ref={flatListRef}
-                data={trendingMovies}
+                data={heroMovies.slice(0, 5)}
                 renderItem={renderFeaturedItem}
                 horizontal
                 pagingEnabled
@@ -163,66 +148,84 @@ export default function Home() {
                   setCurrentHeaderIndex(index);
                 }}
                 onScrollToIndexFailed={(info) => {
+                  // Fallback logic for scroll failure
                   const wait = new Promise(resolve => setTimeout(resolve, 500));
                   wait.then(() => {
-                    flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+                    if (flatListRef.current) {
+                      flatListRef.current.scrollToIndex({ index: info.index, animated: true });
+                    }
                   });
                 }}
               />
             </View>
-
-            {/* Trending Section */}
-            {movies.length > 5 && (
-              <View className="mb-8">
-                <View className="flex-row justify-between items-center px-5 mb-4">
-                  <Text className="text-2xl font-black text-white uppercase tracking-widest">Trending</Text>
-
-                </View>
-                <FlatList
-                  horizontal
-                  data={movies.slice(5, 15)}
-                  renderItem={renderMovieItem}
-                  keyExtractor={(item) => `trending-${item.imdbId || item.title}`}
-                  contentContainerStyle={{ paddingHorizontal: 20 }}
-                  showsHorizontalScrollIndicator={false}
-                />
-              </View>
-            )}
-
-            {/* Top Rated */}
-            <View className="mb-8">
-              <View className="flex-row justify-between items-center px-5 mb-4">
-                <Text className="text-2xl font-black text-white uppercase tracking-widest">Top Rated</Text>
-
-              </View>
-              <FlatList
-                horizontal
-                data={topRatedMovies}
-                renderItem={renderMovieItem}
-                keyExtractor={(item) => `top-${item.imdbId || item.title}`}
-                contentContainerStyle={{ paddingHorizontal: 20 }}
-                showsHorizontalScrollIndicator={false}
-              />
-            </View>
-
-            {/* New Releases */}
-            <View className="mb-8">
-              <View className="flex-row justify-between items-center px-5 mb-4">
-                <Text className="text-2xl font-black text-white uppercase tracking-widest">New Releases</Text>
-
-              </View>
-              <FlatList
-                horizontal
-                data={newReleases}
-                renderItem={renderMovieItem}
-                keyExtractor={(item) => `new-${item.imdbId || item.title}`}
-                contentContainerStyle={{ paddingHorizontal: 20 }}
-                showsHorizontalScrollIndicator={false}
-              />
-            </View>
           </View>
         )}
+
+        {/* CONTENT ROWS (Slow API) */}
+        <View className="pb-8">
+          {loadingRows ? (
+            <View>
+              <Text className="text-2xl font-black text-white uppercase tracking-widest px-5 mb-4">Action</Text>
+              <SkeletonRow />
+              <Text className="text-2xl font-black text-white uppercase tracking-widest px-5 mb-4">Comedy</Text>
+              <SkeletonRow />
+              <Text className="text-2xl font-black text-white uppercase tracking-widest px-5 mb-4">Upcoming</Text>
+              <SkeletonRow />
+            </View>
+          ) : (
+            contentRows && (
+              <>
+                {/* Action Row */}
+                <View className="mb-8">
+                  <View className="flex-row justify-between items-center px-5 mb-4">
+                    <Text className="text-2xl font-black text-white uppercase tracking-widest">Action</Text>
+                  </View>
+                  <FlatList
+                    horizontal
+                    data={contentRows.action}
+                    renderItem={renderMovieItem}
+                    keyExtractor={(item) => `action-${item.imdbId || item.title}`}
+                    contentContainerStyle={{ paddingHorizontal: 20 }}
+                    showsHorizontalScrollIndicator={false}
+                  />
+                </View>
+
+                {/* Comedy Row */}
+                <View className="mb-8">
+                  <View className="flex-row justify-between items-center px-5 mb-4">
+                    <Text className="text-2xl font-black text-white uppercase tracking-widest">Comedy</Text>
+                  </View>
+                  <FlatList
+                    horizontal
+                    data={contentRows.comedy}
+                    renderItem={renderMovieItem}
+                    keyExtractor={(item) => `comedy-${item.imdbId || item.title}`}
+                    contentContainerStyle={{ paddingHorizontal: 20 }}
+                    showsHorizontalScrollIndicator={false}
+                  />
+                </View>
+
+                {/* Upcoming Row */}
+                <View className="mb-8">
+                  <View className="flex-row justify-between items-center px-5 mb-4">
+                    <Text className="text-2xl font-black text-white uppercase tracking-widest">Upcoming</Text>
+                  </View>
+                  <FlatList
+                    horizontal
+                    data={contentRows.upcoming}
+                    renderItem={renderMovieItem}
+                    keyExtractor={(item) => `upcoming-${item.imdbId || item.title}`}
+                    contentContainerStyle={{ paddingHorizontal: 20 }}
+                    showsHorizontalScrollIndicator={false}
+                  />
+                </View>
+              </>
+            )
+          )}
+        </View>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
+

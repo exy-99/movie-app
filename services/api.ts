@@ -1,316 +1,250 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
-const API_KEY = process.env.EXPO_PUBLIC_MOVIE_API_KEY;
-const API_HOST = 'streaming-availability.p.rapidapi.com';
-const BASE_URL = `https://${API_HOST}`;
+const EXPO_PUBLIC_MOVIE_API_KEY = process.env.EXPO_PUBLIC_MOVIE_API_KEY;
+const EXPO_PUBLIC_RAPIDAPI_HOST2 = process.env.EXPO_PUBLIC_RAPIDAPI_HOST2;
 
-const TRENDING_CACHE_KEY = 'TRENDING_MOVIES_CACHE';
-const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours
 
-// --- API DTOs (Data Transfer Objects) ---
+// --- Clients ---
+const fastClient = axios.create({
+  baseURL: 'https://streaming-availability.p.rapidapi.com',
+  headers: {
+    'X-RapidAPI-Key': EXPO_PUBLIC_MOVIE_API_KEY,
+    'X-RapidAPI-Host': 'streaming-availability.p.rapidapi.com',
+  },
+});
 
-export interface ImageSetDto {
-  verticalPoster: {
-    w240: string;
-    w360: string;
-    w480: string;
-    w600: string;
-    w720: string;
-  };
-  horizontalPoster: {
-    w360: string;
-    w480: string;
-    w720: string;
-    w1080: string;
-    w1440: string;
-  };
-  verticalBackdrop: {
-    w240: string;
-    w360: string;
-    w480: string;
-    w600: string;
-    w720: string;
-  };
-  horizontalBackdrop: {
-    w360: string;
-    w480: string;
-    w720: string;
-    w1080: string;
-    w1440: string;
-  };
-}
 
-export interface ShowDto {
-  itemType: 'show';
-  showType: 'movie' | 'series';
-  id: string;
-  imdbId: string;
-  tmdbId: string;
-  title: string;
-  overview: string;
-  releaseYear: number;
-  originalTitle: string;
-  genres: { id: string; name: string }[];
-  directors: string[];
-  cast: string[];
-  rating: number;
-  runtime: number; // Runtime in minutes
-  imageSet?: ImageSetDto;
-}
+const slowClient = axios.create({
+  baseURL: 'https://moviesminidatabase.p.rapidapi.com',
+  headers: {
+    'X-RapidAPI-Key': EXPO_PUBLIC_MOVIE_API_KEY,
+    'X-RapidAPI-Host': EXPO_PUBLIC_RAPIDAPI_HOST2,
+  },
+});
 
-export interface SearchResponseDto {
-  shows: ShowDto[];
-  hasMore: boolean;
-  nextCursor?: string;
-}
+// --- Constants ---
+const HERO_CACHE_KEY = 'HERO_MOVIES_CACHE';
+const CACHE_DURATION = 6 * 60 * 60 * 1000; // 24 hours
 
-// --- Application Domain Interfaces ---
-
+// --- Interfaces ---
 export interface Movie {
   title: string;
   imdbId: string;
-  tmdbId: string;
-  overview: string;
+  tmdbId?: string;
+  overview?: string;
   releaseYear: number;
-  genres: { id: string; name: string }[];
-  rating: number;
-  runtime?: number; // Runtime in minutes
+  genres?: { id: string; name: string }[];
+  rating?: number;
+  runtime?: number;
   imageSet?: {
-    verticalPoster?: { w480: string };
-    horizontalPoster?: { w1080: string };
+    verticalPoster?: { w480?: string; w720?: string };
+    horizontalPoster?: { w1080?: string };
+  };
+}
+
+export interface MovieDetails extends Movie {
+  cast: string[];
+  directors: string[];
+  streamingOptions?: any; // Keeping it flexible for now
+  imageSet: {
+    verticalPoster: { w720: string; w480?: string };
+    horizontalPoster: { w1080: string };
   };
 }
 
 // --- Helper Functions ---
+const mapFastApiToMovie = (item: any): Movie => ({
+  title: item.title,
+  imdbId: item.imdbId,
+  tmdbId: item.tmdbId,
+  overview: item.overview,
+  releaseYear: item.releaseYear,
+  genres: item.genres,
+  rating: item.rating,
+  runtime: item.runtime,
+  imageSet: {
+    verticalPoster: item.imageSet?.verticalPoster ? { w480: item.imageSet.verticalPoster.w480 } : undefined,
+    horizontalPoster: item.imageSet?.horizontalPoster ? { w1080: item.imageSet.horizontalPoster.w1080 } : undefined,
+  },
+});
 
-const mapShowDtoToMovie = (show: ShowDto): Movie => {
-  return {
-    title: show.title,
-    imdbId: show.imdbId,
-    tmdbId: show.tmdbId,
-    overview: show.overview,
-    releaseYear: show.releaseYear,
-    genres: show.genres,
-    rating: show.rating,
-    // Use API runtime or fallback to random logic for UI consistency if missing (0/undefined)
-    runtime: show.runtime || Math.floor(Math.random() * (180 - 90 + 1) + 90),
-    imageSet: {
-      verticalPoster: show.imageSet?.verticalPoster?.w480
-        ? { w480: show.imageSet.verticalPoster.w480 }
-        : undefined,
-      horizontalPoster: show.imageSet?.horizontalPoster?.w1080
-        ? { w1080: show.imageSet.horizontalPoster.w1080 }
-        : undefined,
-    },
-  };
-};
+// Generic mapper for Slow API - adapting based on potential response structure
+// Assuming Slow API returns something like { results: [{ title, imdb_id, gen: [...], ... }] }
+// Since I don't have the exact response shape, I'll map common fields and add safety checks.
+const mapSlowApiToMovie = (item: any): Movie => ({
+  title: item.title,
+  imdbId: item.imdb_id || item.imdbId, // API might use snake_case
+  releaseYear: parseInt(item.year) || item.releaseYear || 2024,
+  genres: item.gen ? item.gen.map((g: any) => ({ id: g.id || g.genre, name: g.genre || g.name })) : [],
+  rating: item.rating || 0,
+  imageSet: {
+    verticalPoster: { w480: item.image_url || item.poster || item.banner || item.primaryImage || 'https://via.placeholder.com/300x450' },
+  },
+});
 
-export const fetchMovies = async (): Promise<Movie[]> => {
+// --- API Functions ---
+
+// 1. Hero Movies (Fast API + Cache)
+export const getHeroMovies = async (): Promise<Movie[]> => {
   try {
-    // 1. Check Cache
-    const cachedData = await AsyncStorage.getItem(TRENDING_CACHE_KEY);
+    // Check Cache
+    const cachedData = await AsyncStorage.getItem(HERO_CACHE_KEY);
     if (cachedData) {
       const { timestamp, data } = JSON.parse(cachedData);
-      const isExpired = Date.now() - timestamp > CACHE_DURATION;
-
-      if (!isExpired) {
-        console.log('✅ Returning valid cached data');
+      if (Date.now() - timestamp < CACHE_DURATION) {
+        console.log('✅ Returning cached Hero movies');
         return data;
       } else {
-        console.log('⚠️ Cache expired, fetching new data...');
+        console.log('⚠️ Hero cache expired');
       }
-    } else {
-      console.log('ℹ️ No cache found, fetching from API...');
     }
 
-    // 2. Fetch from API with pagination
-    const allMovies: Movie[] = [];
-    let cursor: string | undefined = undefined;
-    const MAX_PAGES = 3; // Fetch 3 pages -> ~60 items
+    console.log('🚀 Fetching Hero movies from Fast API...');
+    const response = await fastClient.get('/shows/search/filters', {
+      params: {
+        country: 'us',
+        series_granularity: 'show',
+        order_by: 'popularity_1week',
+        output_language: 'en',
+        show_type: 'movie',
+      },
+    });
 
-    for (let page = 0; page < MAX_PAGES; page++) {
-      const queryParams = [
-        'country=us',
-        'series_granularity=show',
-        'order_by=popularity_1week',
-        'output_language=en',
-        'show_type=movie',
-      ];
+    const movies = response.data.shows.map(mapFastApiToMovie);
 
-      if (cursor) {
-        queryParams.push(`cursor=${encodeURIComponent(cursor)}`);
-      }
+    // Save to Cache
+    await AsyncStorage.setItem(HERO_CACHE_KEY, JSON.stringify({
+      timestamp: Date.now(),
+      data: movies,
+    }));
 
-      const queryString = queryParams.join('&');
-      const url = `${BASE_URL}/shows/search/filters?${queryString}`;
+    return movies;
+  } catch (error) {
+    console.error('❌ Error fetching Hero movies:', error);
+    return [];
+  }
+};
 
-      console.log(`📡 Fetching page ${page + 1}: ${url}`);
+// 2. Content Rows (Slow API - Parallel with Error Handling)
+export const getContentRows = async () => {
+  console.log('🐢 Fetching Content Rows from Slow API...');
 
-      const options = {
-        method: 'GET',
-        headers: {
-          'X-RapidAPI-Key': API_KEY || '',
-          'X-RapidAPI-Host': API_HOST,
-        },
-      };
-
-      const response = await fetch(url, options);
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          console.error('❌ API Quota Exceeded');
-          break; // Stop fetching if quota exceeded
-        }
-        console.error(`❌ API Error on page ${page + 1}: ${response.status}`);
-        break;
-      }
-
-      const json: SearchResponseDto = await response.json();
-
-      if (!json.shows || json.shows.length === 0) {
-        console.log(`⚠️ Page ${page + 1} returned no shows.`);
-        break;
-      }
-
-      const mappedMovies = json.shows.map(mapShowDtoToMovie);
-      allMovies.push(...mappedMovies);
-      console.log(`✅ Page ${page + 1} fetched: ${mappedMovies.length} movies.`);
-
-      if (!json.hasMore || !json.nextCursor) {
-        console.log('ℹ️ No more pages available.');
-        break;
-      }
-      cursor = json.nextCursor;
-
-      // Safety break to prevent infinite loops strictly
-      if (page === MAX_PAGES - 1) break;
-    }
-
-    // 3. Save to Cache if we got data
-    if (allMovies.length > 0) {
-      await AsyncStorage.setItem(
-        TRENDING_CACHE_KEY,
-        JSON.stringify({
-          timestamp: Date.now(),
-          data: allMovies,
-        })
-      );
-      console.log(`💾 Data cached successfully: ${allMovies.length} total movies`);
-      return allMovies;
-    } else {
-      console.log('⚠️ No movies fetched, returning empty list.');
+  const fetchGenre = async (genre: string) => {
+    try {
+      const res = await slowClient.get(`/movie/byGen/${genre}/`);
+      return res.data.results?.map(mapSlowApiToMovie) || [];
+    } catch (error) {
+      console.error(`❌ Error fetching ${genre}:`, error);
       return [];
     }
+  };
 
-    // ... (previous code)
+  const fetchUpcoming = async () => {
+    try {
+      // Fallback: Fetch movies from 2025 since 'upcoming' endpoint is unreliable (404)
+      console.log('🔮 Fetching Upcoming (Year 2025)...');
+      const res = await slowClient.get('/movie/byYear/2025/');
+      return res.data.results?.map(mapSlowApiToMovie) || [];
+    } catch (error) {
+      console.error('❌ Error fetching Upcoming:', error);
+      return [];
+    }
+  };
 
+  // Execute in parallel but handle independent failures
+  const [action, comedy, upcoming] = await Promise.all([
+    fetchGenre('Action'),
+    fetchGenre('Comedy'),
+    fetchUpcoming(),
+  ]);
+
+  console.log(`✅ Loaded Rows: Action(${action.length}), Comedy(${comedy.length}), Upcoming(${upcoming.length})`);
+  return { action, comedy, upcoming };
+};
+
+// 3. Search (Slow API)
+export const searchMovies = async (keyword: string): Promise<Movie[]> => {
+  if (!keyword || keyword.length < 3) return [];
+  console.log(`🐢 Searching Slow API for: ${keyword}`);
+  try {
+    const response = await slowClient.get(`/movie/byKeywords/${keyword}/`);
+    return response.data.results?.map(mapSlowApiToMovie) || [];
   } catch (error) {
-    console.error('Error fetching movies:', error);
-    // Return empty list on error to prevent app crash
+    console.error('❌ Error searching movies:', error);
     return [];
   }
 };
 
-export const searchMovies = async (query: string): Promise<Movie[]> => {
-  if (!query || query.length < 3) return [];
-
-  console.log(`🔎 Searching API for: ${query}`);
+// 4. Movie Details (Slow API - Parallel with Error Handling)
+export const getMovieDetails = async (imdbId: string): Promise<MovieDetails | null> => {
+  console.log(`🐢 Fetching Details from Slow API for: ${imdbId}`);
   try {
-    const options = {
-      method: 'GET',
-      headers: {
-        'X-RapidAPI-Key': API_KEY || '',
-        'X-RapidAPI-Host': API_HOST,
-      },
-    };
+    // Fetch base details first as it's critical
+    let details;
+    try {
+      const res = await slowClient.get(`/movie/id/${imdbId}/`);
+      console.log(`🔍 Raw Details for ${imdbId}:`, JSON.stringify(res.data, null, 2));
+      details = res.data;
+      if (res.data.results) {
+        console.log('⚠️ API returned results array, using first item');
+        details = Array.isArray(res.data.results) ? res.data.results[0] : res.data.results;
+      }
 
-    // Search specific title
-    // Using limit=20 (maximum allowed by API)
-    const url = `${BASE_URL}/shows/search/title?country=us&title=${encodeURIComponent(query)}&series_granularity=show&show_type=movie&limit=20&output_language=en`;
-
-    const response = await fetch(url, options);
-
-    if (!response.ok) throw new Error(`API Error: ${response.status}`);
-
-    const json: SearchResponseDto = await response.json();
-    return (json.shows || []).map(mapShowDtoToMovie);
-
-  } catch (error) {
-    console.error('Error searching movies:', error);
-    return [];
-  }
-};
-
-// --- Movie Details & Streaming ---
-
-export interface StreamingOption {
-  service: {
-    name: string;
-    imageSet: { lightThemeImage: string };
-  };
-  type: 'subscription' | 'rent' | 'buy';
-  link: string;
-}
-
-export interface MovieDetails {
-  imdbId: string;
-  title: string;
-  overview: string;
-  streamingOptions: Record<string, StreamingOption[]>; // Key is country code like 'us'
-  imageSet: {
-    verticalPoster: { w720: string };
-    horizontalPoster: { w1080: string };
-  };
-  rating: number;
-  releaseYear: number;
-  genres: { id: string; name: string }[];
-  cast: string[];
-  directors: string[];
-}
-
-export const fetchShowDetails = async (imdbId: string, country: string = 'us'): Promise<MovieDetails | null> => {
-  console.log(`🎬 Fetching details for: ${imdbId} (country: ${country})`);
-  try {
-    const options = {
-      method: 'GET',
-      headers: {
-        'X-RapidAPI-Key': API_KEY || '',
-        'X-RapidAPI-Host': API_HOST,
-      },
-    };
-
-    const url = `${BASE_URL}/shows/${imdbId}?output_language=en&country=${country}`;
-    const response = await fetch(url, options);
-
-    if (!response.ok) {
-      console.error(`❌ API Error fetching details for ${imdbId}: ${response.status}`);
+      if (!details) {
+        console.error('❌ Details object is empty after processing');
+        return null;
+      }
+    } catch (e) {
+      console.error(`❌ Critical: Failed to fetch details for ${imdbId}`, e);
       return null;
     }
 
-    const json = await response.json();
-
-    // Validate required fields to avoid crashes
-    if (!json.imdbId) return null;
-
-    return {
-      imdbId: json.imdbId,
-      title: json.title,
-      overview: json.overview,
-      streamingOptions: json.streamingOptions || {},
-      imageSet: {
-        verticalPoster: { w720: json.imageSet?.verticalPoster?.w720 || json.imageSet?.verticalPoster?.w480 || '' },
-        horizontalPoster: { w1080: json.imageSet?.horizontalPoster?.w1080 || json.imageSet?.horizontalPoster?.w720 || '' }
-      },
-      rating: json.rating || 0,
-      releaseYear: json.releaseYear,
-      genres: json.genres || [],
-      cast: json.cast || [],
-      directors: json.directors || []
+    // Parallel fetch for extras (Cast, etc.)
+    const fetchCast = async () => {
+      try {
+        const res = await slowClient.get(`/movie/id/${imdbId}/cast/`);
+        return Array.isArray(res.data.results) ? res.data.results : [];
+      } catch (e) {
+        console.error('Error fetching cast:', e);
+        return [];
+      }
     };
 
+    const fetchRecs = async () => {
+      // Placeholder for future implementation
+      return [];
+    };
+
+    const [cast, recs] = await Promise.all([
+      fetchCast(),
+      fetchRecs()
+    ]);
+
+    // Combine into MovieDetails
+    const movieBase = mapSlowApiToMovie(details);
+    const movieDetails: MovieDetails = {
+      ...movieBase,
+      overview: details.description || details.plot || 'No overview available.',
+      cast: (Array.isArray(cast) ? cast : []).map((c: any) => c.actor || c.name).slice(0, 10),
+      directors: details.directors?.map((d: any) => d.name) || [],
+      imageSet: {
+        verticalPoster: {
+          w720: movieBase.imageSet?.verticalPoster?.w720 || movieBase.imageSet?.verticalPoster?.w480 || 'https://via.placeholder.com/300x450',
+          w480: movieBase.imageSet?.verticalPoster?.w480
+        },
+        horizontalPoster: {
+          w1080: movieBase.imageSet?.horizontalPoster?.w1080 || 'https://via.placeholder.com/1080x600'
+        }
+      }
+    };
+
+    return movieDetails;
+
   } catch (error) {
-    console.error(`Error fetching movie details for ${imdbId}:`, error);
+    console.error('❌ Error fetching movie details:', error);
     return null;
   }
 };
+
 

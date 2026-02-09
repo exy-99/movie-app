@@ -23,6 +23,8 @@ export default function Home() {
   const flatListRef = useRef<FlatList>(null);
   const { width } = Dimensions.get('window');
 
+  const [isActionLoaded, setIsActionLoaded] = useState(false);
+
   // 1. Fetch Data
   useEffect(() => {
     // Fast API: Hero
@@ -43,17 +45,6 @@ export default function Home() {
 
     loadHero();
     loadRows();
-
-    // DEBUG: Trigger genre fetch for logs
-    const debugApi = async () => {
-      try {
-        const { getMoviesByGenre } = await import('@/services/api');
-        await getMoviesByGenre('Action');
-      } catch (e) {
-        console.error('DEBUG API Error:', e);
-      }
-    };
-    debugApi();
   }, []);
 
   // 2. Auto-Play Carousel
@@ -197,11 +188,19 @@ export default function Home() {
                 {/* New Releases Row */}
                 <MovieSection title="🆕 New Releases" movies={contentRows.newReleases} />
 
-                {/* Action Row */}
-                <SmartGenreRow title="💥 Action Hits" genre="Action" />
+                {/* Action Row - Loads First */}
+                <SmartGenreRow
+                  title="💥 Action Hits"
+                  genre="Action"
+                  onLoadComplete={() => setIsActionLoaded(true)}
+                />
 
-                {/* Comedy Row */}
-                <SmartGenreRow title="😂 Comedy Favorites" genre="Comedy" />
+                {/* Comedy Row - Loads after Action */}
+                <SmartGenreRow
+                  title="😂 Comedy Favorites"
+                  genre="Comedy"
+                  enabled={isActionLoaded}
+                />
               </>
             )
           )}

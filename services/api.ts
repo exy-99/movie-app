@@ -215,11 +215,16 @@ export const searchMovies = async (query: string): Promise<Movie[]> => {
 // 5. Genre Support
 export const getMoviesByGenre = async (genre: string, page: number = 1): Promise<Movie[]> => {
     // Simkl Genre API: /movies/genres/{genre}/...
-    // Converting genre to lowercase/slug format if needed. Simkl uses simple slugs like 'action'
+    // Converting genre to lowercase/slug format if needed.
     const genreSlug = genre.toLowerCase().replace(/\s+/g, '-');
-    const data = await fetchSimkl<SimklItem[]>(`/movies/genres/${genreSlug}/all-types/all-countries/all-years/popular-today`, { limit: 20, page });
+    const data = await fetchSimkl<SimklItem[]>(`/movies/genres/${genreSlug}/all-types/all-countries/all-years/rank`, { limit: 50, page, extended: 'overview,metadata,tmdb,genres,poster,fanart' });
     if (!data) return [];
-    return data.map(mapSimklToMovie);
+
+    // Filter out items without posters to ensure UI quality
+    return data
+        .filter(item => item.poster && item.poster !== "")
+        .slice(0, 20)
+        .map(mapSimklToMovie);
 };
 
 

@@ -9,9 +9,11 @@ interface SmartGenreRowProps {
     genre: string;
     onLoadComplete?: () => void;
     enabled?: boolean;
+    variant?: 'standard' | 'large' | 'landscape';
+    layout?: 'row' | 'grid' | 'double-scroll'; // Added double-scroll
 }
 
-export default function SmartGenreRow({ title, genre, onLoadComplete, enabled = true }: SmartGenreRowProps) {
+export default function SmartGenreRow({ title, genre, onLoadComplete, enabled = true, variant = 'standard', layout = 'row' }: SmartGenreRowProps) {
     const [movies, setMovies] = useState<Movie[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -45,5 +47,5 @@ export default function SmartGenreRow({ title, genre, onLoadComplete, enabled = 
 
     if (movies.length === 0) return null;
 
-    return <MovieSection title={title} movies={movies} />;
+    return <MovieSection title={title} movies={movies} variant={variant} layout={layout} />;
 }

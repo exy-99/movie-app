@@ -1,4 +1,5 @@
 import { Movie } from "@/services/api";
+import { Ionicons } from '@expo/vector-icons';
 import { Link } from "expo-router";
 import React from "react";
 import { Dimensions, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
@@ -7,9 +8,10 @@ interface MovieSectionProps {
     title: string;
     movies: Movie[];
     variant?: 'standard' | 'large' | 'landscape';
+    layout?: 'row' | 'grid' | 'double-scroll';
 }
 
-export default function MovieSection({ title, movies, variant = 'standard' }: MovieSectionProps) {
+export default function MovieSection({ title, movies, variant = 'standard', layout = 'row' }: MovieSectionProps) {
     if (!movies || movies.length === 0) return null;
 
     const { width } = Dimensions.get('window');
@@ -18,6 +20,7 @@ export default function MovieSection({ title, movies, variant = 'standard' }: Mo
     let cardHeight = cardWidth * 1.5; // 2:3 ratio
 
     if (variant === 'large') {
+        // MATCH REFERENCE: Larger posters -> ~45% width
         cardWidth = width * 0.45;
         cardHeight = cardWidth * 1.5;
     } else if (variant === 'landscape') {
@@ -25,48 +28,142 @@ export default function MovieSection({ title, movies, variant = 'standard' }: Mo
         cardHeight = cardWidth * (9 / 16);
     }
 
-    return (
-        <View className="mb-8">
-            <View className="flex-row items-center mb-4 px-5">
-                <View className="w-1 h-6 bg-primary mr-3 rounded-full" />
-                <Text className="text-xl font-bold text-white uppercase tracking-wider">
-                    {title}
-                </Text>
-            </View>
+    // Grid Layout Overrides
+    if (layout === 'grid') {
+        const gap = 8;
+        const padding = 40;
 
-            <FlatList
-                data={movies}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
-                keyExtractor={(item) => item.imdbId}
-                renderItem={({ item }) => (
-                    <Link href={`/movie/${item.imdbId}?title=${encodeURIComponent(item.title)}&poster=${encodeURIComponent(item.imageSet?.verticalPoster?.w480 || '')}`} asChild>
-                        <TouchableOpacity style={{ width: cardWidth }}>
-                            <View
-                                style={{ height: cardHeight }}
-                                className="rounded-xl overflow-hidden bg-gray-800 border border-white/10 shadow-lg shadow-black/50"
-                            >
-                                <Image
-                                    source={{
-                                        uri: variant === 'landscape'
-                                            ? (item.imageSet?.horizontalPoster?.w1080 || item.imageSet?.verticalPoster?.w480)
-                                            : (item.imageSet?.verticalPoster?.w480 || 'https://via.placeholder.com/150')
-                                    }}
-                                    className="w-full h-full"
-                                    resizeMode="cover"
-                                />
+        if (variant === 'large') {
+            // 3 columns for larger posters
+            cardWidth = (width - padding - (gap * 2)) / 3;
+        } else {
+            // Default 5 columns
+            cardWidth = (width - padding - (gap * 4)) / 5;
+        }
+
+        cardHeight = cardWidth * 1.5;
+    }
+
+    const renderCard = ({ item }: { item: Movie }) => (
+        <Link href={`/movie/${item.imdbId}?title=${encodeURIComponent(item.title)}&poster=${encodeURIComponent(item.imageSet?.verticalPoster?.w480 || '')}`} asChild>
+            <TouchableOpacity style={{ width: cardWidth }} className="mr-0">
+                <View
+                    style={{ height: cardHeight }}
+                    className="overflow-hidden bg-black border border-[#00FF41] relative" // Green border
+                >
+                    <Image
+                        source={{
+                            uri: variant === 'landscape'
+                                ? (item.imageSet?.horizontalPoster?.w1080 || item.imageSet?.verticalPoster?.w480)
+                                : (item.imageSet?.verticalPoster?.w480 || 'https://via.placeholder.com/150')
+                        }}
+                        className="w-full h-full opacity-80"
+                        resizeMode="cover"
+                    />
+
+                    {/* Dark gradient overlay for text readability */}
+                    <View className="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-black/90 to-transparent" />
+
+                    {/* RATING Overlay - Top Right */}
+                    {!!item.rating && (
+                        <View className="absolute top-1 right-1 bg-black/60 px-1.5 py-0.5 rounded flex-row items-center border border-[#00FF41]/30">
+                            <Ionicons name="star" size={10} color="#00FF41" style={{ marginRight: 2 }} />
+                            <Text className="text-[#00FF41] font-mono text-[10px] font-bold">{item.rating.toFixed(1)}</Text>
+                        </View>
+                    )}
+
+                    {/* Internal Wrapper for Title and Year - Bottom */}
+                    <View className="absolute bottom-2 left-2 right-2 flex-row justify-between items-center">
+                        <Text
+                            className="text-[#00FF41] font-mono text-[10px] font-bold uppercase tracking-wider flex-1 mr-2" // Green text
+                            numberOfLines={1}
+                        >
+                            {item.title}
+                        </Text>
+
+                        {/* YEAR Badge - Next to Title */}
+                        {!!item.releaseYear && (
+                            <View className="bg-black/60 px-1.5 py-0.5 rounded border border-[#00FF41]/30">
+                                <Text className="text-[#00FF41] font-mono text-[8px] font-bold">{item.releaseYear}</Text>
                             </View>
-                            <Text
-                                className={`text-gray-200 font-semibold mt-2 ${variant === 'large' ? 'text-sm' : 'text-xs'}`}
-                                numberOfLines={1}
-                            >
-                                {item.title}
-                            </Text>
-                        </TouchableOpacity>
-                    </Link>
-                )}
-            />
+                        )}
+                    </View>
+                </View>
+                {/* No external text */}
+            </TouchableOpacity>
+        </Link>
+    );
+
+    // Header Component
+    const SectionHeader = () => (
+        <View className="mb-4 px-5">
+            <View className="flex-row items-center justify-between">
+                {/* Title with left bar */}
+                <View className="flex-row items-center">
+                    <View className="w-1 h-6 bg-[#00FF41] mr-3" />
+                    <Text className="text-xl font-bold text-white uppercase tracking-tighter font-mono">
+                        {title.replace(/\s+/g, '_')}
+                    </Text>
+                </View>
+
+                {/* View All Button */}
+                <View className="border border-[#005500] bg-[#001100] px-3 py-1">
+                    <Text className="text-[8px] text-[#00FF41] font-bold font-mono tracking-widest">VIEW_ALL</Text>
+                </View>
+            </View>
+        </View>
+    );
+
+    if (layout === 'double-scroll') {
+        // Enforce 5 items per row exactly
+        const firstRow = movies.slice(0, 5);
+        const secondRow = movies.slice(5, 10);
+
+        return (
+            <View className="mb-10">
+                <SectionHeader />
+                <FlatList
+                    data={firstRow}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 20, gap: 15 }}
+                    keyExtractor={(item) => `row1-${item.imdbId}`}
+                    renderItem={renderCard}
+                    className="mb-4"
+                />
+                <FlatList
+                    data={secondRow}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 20, gap: 15 }}
+                    keyExtractor={(item) => `row2-${item.imdbId}`}
+                    renderItem={renderCard}
+                />
+            </View>
+        );
+    }
+
+    return (
+        <View className="mb-10">
+            <SectionHeader />
+            {layout === 'grid' ? (
+                <View className="px-5 flex-row flex-wrap justify-between">
+                    {movies.slice(0, 10).map((item) => (
+                        <React.Fragment key={item.imdbId}>
+                            {renderCard({ item })}
+                        </React.Fragment>
+                    ))}
+                </View>
+            ) : (
+                <FlatList
+                    data={movies}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 20, gap: 15 }}
+                    keyExtractor={(item) => item.imdbId}
+                    renderItem={renderCard}
+                />
+            )}
         </View>
     );
 }

@@ -1,0 +1,142 @@
+URL: https://api.simkl.com/movies/genres/action/all-types/all-countries/all-years/popular-today?limit=5&page=1&extended=overview,metadata,tmdb,genres,poster,fanart&client_id=bf711694f43a8ce409e5492957b4f3d07ac5eda293f4d14d967c55cac72f6e4e
+
+Item 0: Sister's Keeper
+Poster: 
+Fanart: 
+Full Item Data: {
+  "title": "Sister's Keeper",
+  "year": 2007,
+  "date": "2007-01-01T00:00:00-05:00",
+  "url": "/tv/59174/sisters-keeper",
+  "poster": "",
+  "fanart": "",
+  "ids": {
+    "simkl_id": 59174,
+    "slug": "sisters-keeper",
+    "tmdb": "5525"
+  },
+  "rank": null,
+  "ratings": {
+    "simkl": {
+      "rating": 5.9,
+      "votes": 1
+    },
+    "imdb": {
+      "rating": 0,
+      "votes": 0
+    }
+  }
+}
+---
+Item 1: Blackfire
+Poster: 
+Fanart: 
+Full Item Data: {
+  "title": "Blackfire",
+  "year": 1999,
+  "date": "1999-07-07T00:00:00-05:00",
+  "url": "/tv/60830/blackfire",
+  "poster": "",
+  "fanart": "",
+  "ids": {
+    "simkl_id": 60830,
+    "slug": "blackfire",
+    "tmdb": "7914"
+  },
+  "rank": null,
+  "ratings": {
+    "simkl": {
+      "rating": 0,
+      "votes": 0
+    },
+    "imdb": {
+      "rating": 0,
+      "votes": 0
+    }
+  }
+}
+---
+Item 2: Iceberg
+Poster: 
+Fanart: 
+Full Item Data: {
+  "title": "Iceberg",
+  "year": 2008,
+  "date": "2008-12-07T00:00:00-05:00",
+  "url": "/tv/60922/iceberg",
+  "poster": "",
+  "fanart": "",
+  "ids": {
+    "simkl_id": 60922,
+    "slug": "iceberg",
+    "tmdb": "8061"
+  },
+  "rank": null,
+  "ratings": {
+    "simkl": {
+      "rating": 0,
+      "votes": 0
+    },
+    "imdb": {
+      "rating": 0,
+      "votes": 0
+    }
+  }
+}
+---
+Item 3: Bling Bling
+Poster: 
+Fanart: 
+Full Item Data: {
+  "title": "Bling Bling",
+  "year": 2001,
+  "date": "2001-01-01T00:00:00-05:00",
+  "url": "/tv/67526/bling-bling",
+  "poster": "",
+  "fanart": "",
+  "ids": {
+    "simkl_id": 67526,
+    "slug": "bling-bling",
+    "tmdb": "12688"
+  },
+  "rank": null,
+  "ratings": {
+    "simkl": {
+      "rating": 0,
+      "votes": 0
+    },
+    "imdb": {
+      "rating": 0,
+      "votes": 0
+    }
+  }
+}
+---
+Item 4: Mercy
+Poster: 12/12991701c2d52c1b4a
+Fanart: 
+Full Item Data: {
+  "title": "Mercy",
+  "year": 2008,
+  "date": "2008-07-26T00:00:00-05:00",
+  "url": "/tv/68970/mercy",
+  "poster": "12/12991701c2d52c1b4a",
+  "fanart": "",
+  "ids": {
+    "simkl_id": 68970,
+    "slug": "mercy",
+    "tmdb": "13780"
+  },
+  "rank": null,
+  "ratings": {
+    "simkl": {
+      "rating": 0,
+      "votes": 0
+    },
+    "imdb": {
+      "rating": 0,
+      "votes": 0
+    }
+  }
+}
+---

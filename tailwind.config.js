@@ -19,10 +19,13 @@ module.exports = {
         lato: ["Lato_400Regular", "sans-serif"],
         latoBold: ["Lato_700Bold", "sans-serif"],
         hennyPenny: ["HennyPenny_400Regular", "cursive"],
+        mono: ["Courier New", "monospace"], // Using a common mono font stack
       },
       colors: {
         primary: "#84f906",
         secondary: "#121212",
+        "cyber-gray": "#000000", // Pure black for background
+        "neon-green": "#84f906",
       },
     },
 

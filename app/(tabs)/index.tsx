@@ -23,10 +23,9 @@ export default function Home() {
   const flatListRef = useRef<FlatList>(null);
   const { width, height } = Dimensions.get('window');
 
-  // Hero Height = 55% of screen height
-  const HERO_HEIGHT = height * 0.55;
+  // Hero Height = 70% for immersive look
+  const HERO_HEIGHT = height * 0.7;
 
-  const [isActionLoaded, setIsActionLoaded] = useState(false);
 
   // 1. Fetch Data
   useEffect(() => {
@@ -70,64 +69,76 @@ export default function Home() {
 
   const renderFeaturedItem = ({ item }: { item: Movie }) => (
     <View style={{ width: width, height: HERO_HEIGHT }}>
-      <View className="flex-1 relative">
+      <View className="flex-1 relative bg-[#000000]">
         <Image
           source={{ uri: item.imageSet?.verticalPoster?.w720 || item.imageSet?.verticalPoster?.w480 || 'https://via.placeholder.com/720x1080' }}
-          className="w-full h-full"
+          className="w-full h-full opacity-60"
           resizeMode="cover"
         />
 
-        {/* Gradient Overlay for Readability */}
+        {/* Cyberpunk Gradient Overlay - Pure Black */}
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.8)', '#000000']}
-          locations={[0, 0.4, 0.7, 1]}
+          colors={['transparent', '#000000']}
+          locations={[0.4, 1]}
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         />
 
+        {/* Top Scanline/Border */}
+        <View className="absolute top-0 w-full h-24 bg-gradient-to-b from-[#000000] to-transparent" />
+
         {/* Content Overlay */}
-        <View className="absolute bottom-0 w-full px-5 pb-8">
-          <View className="items-center mb-6">
-            <View className="bg-white/20 px-3 py-1 rounded backdrop-blur-md mb-3 border border-white/10">
-              <Text className="text-white text-[10px] font-bold tracking-widest uppercase">
-                #1 In Movies Today
-              </Text>
-            </View>
+        <View className="absolute bottom-0 w-full px-5 pb-8 items-center">
 
-            <Text className="text-5xl font-black text-white text-center mb-3 font-serif tracking-tighter leading-tight shadow-lg">
-              {item.title}
+          {/* Dynamic Tag Box */}
+          <View className="border border-primary/30 bg-black/50 px-4 py-1.5 mb-6 backdrop-blur-sm">
+            <Text className="text-primary text-[10px] font-mono tracking-[0.2em] font-bold uppercase">
+              {item.genres?.slice(0, 3).map(g => g.name).join(' • ').toUpperCase() || 'CYBERPUNK • SCI-FI'}
             </Text>
+          </View>
 
-            <View className="flex-row items-center gap-2 mb-6">
-              <Text className="text-gray-300 text-xs font-semibold">{item.releaseYear}</Text>
-              <View className="w-1 h-1 bg-gray-500 rounded-full" />
-              <Text className="text-gray-300 text-xs font-semibold uppercase">{item.genres?.[0]?.name || "Film"}</Text>
-              <View className="w-1 h-1 bg-gray-500 rounded-full" />
-              <Text className="text-gray-300 text-xs font-semibold">
-                {item.runtime ? `${Math.floor(item.runtime / 60)}h ${item.runtime % 60}m` : "Movie"}
-              </Text>
+          {/* Title with Glow Effect */}
+          <Text className="text-5xl font-black text-white text-center mb-6 font-mono tracking-tighter leading-tight italic"
+            style={{ textShadowColor: 'rgba(132, 249, 6, 0.5)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 }}>
+            {item.title.toUpperCase()}
+          </Text>
+
+          {/* Action Buttons - CUSTOM LAYOUT FROM IMAGE */}
+          <View className="flex-row items-start justify-between w-full max-w-md mb-10 px-4">
+
+            {/* My List */}
+            <View className="items-center">
+              <TouchableOpacity className="items-center justify-center w-16 h-16 border border-white/30 bg-black/40 rounded-lg mb-2">
+                <Ionicons name="add" size={30} color="white" />
+              </TouchableOpacity>
+              <Text className="text-[10px] text-gray-400 font-mono tracking-widest font-bold">MY LIST</Text>
             </View>
 
-            <View className="flex-row gap-4 w-full px-4">
-              <Link href={`/movie/${item.imdbId}?title=${encodeURIComponent(item.title)}&poster=${encodeURIComponent(item.imageSet?.verticalPoster?.w480 || 'https://via.placeholder.com/720x1080')}`} asChild>
-                <TouchableOpacity className="flex-1 bg-white py-3 rounded-lg flex-row items-center justify-center space-x-2">
-                  <Ionicons name="play" size={24} color="black" />
-                  <Text className="text-black font-bold text-base">Play</Text>
-                </TouchableOpacity>
-              </Link>
-
-              <TouchableOpacity className="flex-1 bg-[#2C2C2C] py-3 rounded-lg flex-row items-center justify-center space-x-2">
-                <Ionicons name="add" size={24} color="white" />
-                <Text className="text-white font-bold text-base">My List</Text>
+            {/* Main Action - Green Block */}
+            <Link href={`/movie/${item.imdbId}?title=${encodeURIComponent(item.title)}&poster=${encodeURIComponent(item.imageSet?.verticalPoster?.w480 || 'https://via.placeholder.com/720x1080')}`} asChild>
+              <TouchableOpacity className="bg-[#00FF41] w-56 h-16 flex-row items-center justify-center space-x-3 shadow-[0_0_60px_rgba(0,255,65,0.9)] rounded-sm border border-[#ccffcc]">
+                <Ionicons name="play-sharp" size={24} color="black" />
+                <Text className="text-black font-mono font-black text-lg tracking-[0.2em]">EXECUTE</Text>
               </TouchableOpacity>
+            </Link>
+
+            {/* Details */}
+            <View className="items-center">
+              <TouchableOpacity className="items-center justify-center w-16 h-16 border border-white/30 bg-black/40 rounded-lg mb-2">
+                <Ionicons name="information-circle-outline" size={30} color="white" />
+              </TouchableOpacity>
+              <Text className="text-[10px] text-gray-400 font-mono tracking-widest font-bold">DETAILS</Text>
             </View>
           </View>
+
+          {/* Protocol Marker REMOVED as per user request */}
+
         </View>
       </View>
     </View>
   );
 
   return (
-    <View className="flex-1 bg-black">
+    <View className="flex-1 bg-[#000000]">
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Header overlaid on top */}
@@ -135,15 +146,15 @@ export default function Home() {
         <Header />
       </View>
 
-      <ScrollView className="flex-1 bg-black" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView className="flex-1 bg-[#000000]" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
 
         {/* HERO SECTION */}
         {loadingHero ? (
-          <View style={{ height: HERO_HEIGHT }} className="justify-center items-center bg-[#121212]">
+          <View style={{ height: HERO_HEIGHT }} className="justify-center items-center bg-[#000000]">
             <ActivityIndicator size="large" color="#84f906" />
           </View>
         ) : (
-          <View style={{ height: HERO_HEIGHT }} className="mb-6 mt-16">
+          <View style={{ height: HERO_HEIGHT }} className="mb-4">
             <FlatList
               ref={flatListRef}
               data={heroMovies.slice(0, 5)}
@@ -156,71 +167,63 @@ export default function Home() {
                 const index = Math.round(event.nativeEvent.contentOffset.x / width);
                 setCurrentHeaderIndex(index);
               }}
-              // Optimistic scroll fix
               getItemLayout={(data, index) => ({ length: width, offset: width * index, index })}
             />
-            {/* Dots Indicator */}
-            <View className="absolute bottom-28 w-full flex-row justify-center gap-2">
-              {heroMovies.slice(0, 5).map((_, i) => (
-                <View
-                  key={i}
-                  className={`w-2 h-2 rounded-full ${i === currentHeaderIndex ? 'bg-white' : 'bg-white/40'}`}
-                />
-              ))}
-            </View>
           </View>
         )}
 
-        {/* CONTENT ROWS */}
-        <View className="-mt-4 relative z-10">
-          {loadingRows ? (
-            <View className="pt-4">
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
+
+
+        {loadingRows ? (
+          <View className="pt-4">
+            <SkeletonRow />
+            <SkeletonRow />
+            <SkeletonRow />
+          </View>
+        ) : (
+          contentRows && (
+            <View className="gap-8">
+              {/* TRENDING_NOW (Was ANIME_SECTOR) */}
+              <MovieSection
+                title="TRENDING_NOW"
+                movies={contentRows.newReleases}
+                variant="large"
+                layout="double-scroll"
+              />
+
+              {/* TOP_RATED (Was TRENDING_NOW) */}
+              <MovieSection
+                title="TOP_RATED"
+                movies={contentRows.topRated}
+                variant="large"
+                layout="double-scroll"
+              />
+
+              {/* Smart Genre Rows - All Large Double Scroll */}
+              <SmartGenreRow
+                title="ACTION"
+                genre="Action"
+                variant="large"
+                layout="double-scroll"
+              />
+
+              <SmartGenreRow
+                title="COMEDY"
+                genre="Comedy"
+                variant="large"
+                layout="double-scroll"
+              />
             </View>
-          ) : (
-            contentRows && (
-              <View className="gap-4">
-                {/* Top Rated Row - Larger Cards */}
-                <MovieSection
-                  title="Top Rated Movies"
-                  movies={contentRows.topRated}
-                  variant="large"
-                />
+          )
+        )}
 
-                {/* Trending Row - Standard Cards */}
-                <MovieSection
-                  title="Trending Now"
-                  movies={contentRows.newReleases}
-                  variant="standard"
-                />
+        <ExternalLink
+          url="https://simkl.com"
+          text="SYSTEM_CORE: SIMKL"
+          style={{ marginTop: 40, marginBottom: 40, alignSelf: 'center', opacity: 0.5 }}
+        />
 
-                {/* Smart Genre Rows */}
-                <SmartGenreRow
-                  title="Blockbuster Actions"
-                  genre="Action"
-                  onLoadComplete={() => setIsActionLoaded(true)}
-                />
-
-                {/* Comedy Row - Loads after Action */}
-                <SmartGenreRow
-                  title="Comedy Hits"
-                  genre="Comedy"
-                  enabled={isActionLoaded}
-                />
-              </View>
-            )
-          )}
-
-          <ExternalLink
-            url="https://simkl.com"
-            text="Powered by Simkl"
-            style={{ marginTop: 40, marginBottom: 40, alignSelf: 'center' }}
-          />
-        </View>
-
-      </ScrollView>
-    </View>
+      </ScrollView >
+    </View >
   );
 }

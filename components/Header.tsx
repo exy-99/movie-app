@@ -1,25 +1,37 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import React from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Header() {
     return (
-        <SafeAreaView edges={['top']} className="px-2 pb-4 flex-row justify-between items-center z-50">
+        <SafeAreaView edges={['top']} className="px-4 pb-4 flex-row justify-between items-center z-50 bg-transparent pt-2">
+
+            {/* LEFT: LOGO */}
             <View className="flex-row items-center">
-                <Image
-                    source={require('../assets/images/react-logo.png')} // Fallback or use profile if available
-                    className="w-10 h-10 rounded-full border-2 border-primary"
-                />
-                <Text className="text-3xl ml-3 font-hennyPenny text-primary pr-1">
+                <Text className="text-xl font-hennyPenny text-primary">
                     WatchMe
                 </Text>
             </View>
 
+            {/* CENTER: NAV TABS */}
+            <View className="flex-row gap-8">
+                <TouchableOpacity className="border-b-2 border-primary pb-1">
+                    <Text className="text-primary font-mono text-base tracking-widest font-bold">FILMS</Text>
+                </TouchableOpacity>
+                <TouchableOpacity className="border-b-2 border-transparent">
+                    <Text className="text-gray-500 font-mono text-base tracking-widest">SERIES</Text>
+                </TouchableOpacity>
+                <TouchableOpacity className="border-b-2 border-transparent">
+                    <Text className="text-gray-500 font-mono text-base tracking-widest">ANIME</Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* RIGHT: SEARCH */}
             <Link href="/search" asChild>
-                <TouchableOpacity className="bg-white/10 p-2 rounded-full border border-white/10">
-                    <Ionicons name="search" size={24} color="white" />
+                <TouchableOpacity>
+                    <Ionicons name="search" size={24} color="#84f906" />
                 </TouchableOpacity>
             </Link>
         </SafeAreaView>

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { generateCacheKey, getCachedData, setCachedData } from './cache';
 
 // --- Configuration ---
 const EXPO_PUBLIC_SIMKL_CLIENT_ID = process.env.EXPO_PUBLIC_SIMKL_CLIENT_ID;
@@ -142,8 +143,23 @@ const mapSimklToDetails = (item: SimklItem): MovieDetails => ({
 
 // Wrapper to handle errors
 const fetchSimkl = async <T>(endpoint: string, params: any = {}): Promise<T | null> => {
+    const cacheKey = generateCacheKey(endpoint, { ...params, client_id: EXPO_PUBLIC_SIMKL_CLIENT_ID });
+
+    // 1. Try to get from cache
+    const cached = await getCachedData<T>(cacheKey);
+    if (cached) {
+        console.log(`⚡ Serving from cache: ${endpoint}`);
+        return cached;
+    }
+
     try {
         const response = await simklClient.get<T>(endpoint, { params: { ...params, client_id: EXPO_PUBLIC_SIMKL_CLIENT_ID } });
+
+        // 2. Save to cache on success
+        if (response.data) {
+            await setCachedData(cacheKey, response.data);
+        }
+
         return response.data;
     } catch (error: any) {
         if (error.response) {

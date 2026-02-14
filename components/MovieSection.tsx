@@ -18,15 +18,15 @@ export default function MovieSection({ title, movies, variant = 'standard', layo
 
     const { width } = Dimensions.get('window');
 
-    let cardWidth = width * 0.35; // Default standard
+    let cardWidth = width * 0.33; // Default standard (reduced from 0.35)
     let cardHeight = cardWidth * 1.5; // 2:3 ratio
 
     if (variant === 'large') {
-        // MATCH REFERENCE: Larger posters -> ~45% width
-        cardWidth = width * 0.45;
+        // MATCH REFERENCE: Larger posters -> ~43% width (reduced from 0.45)
+        cardWidth = width * 0.43;
         cardHeight = cardWidth * 1.5;
     } else if (variant === 'landscape') {
-        cardWidth = width * 0.7;
+        cardWidth = width * 0.66; // Reduced from 0.7
         cardHeight = cardWidth * (9 / 16);
     }
 

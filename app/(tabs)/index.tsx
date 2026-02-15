@@ -1,7 +1,7 @@
 import HeroCarousel from "@/components/HeroCarousel";
 import SectionRow from "@/components/SectionRow";
 import SkeletonRow from "@/components/SkeletonRow";
-import { CATEGORY_MAP } from "@/constants/Categories";
+import { ANIME_CATEGORIES, MOVIE_CATEGORIES, TV_CATEGORIES } from "@/constants/Categories";
 import { fetchMoviesFromPath, Movie } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
@@ -10,6 +10,7 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<'movie' | 'show' | 'anime'>('movie');
   const [sectionsData, setSectionsData] = useState<Record<string, Movie[]>>({});
   const [heroItems, setHeroItems] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,9 +19,10 @@ export default function Home() {
     const loadData = async () => {
       setLoading(true);
       try {
-        const keys = Object.keys(CATEGORY_MAP);
+        const activeMap = activeTab === 'movie' ? MOVIE_CATEGORIES : (activeTab === 'show' ? TV_CATEGORIES : ANIME_CATEGORIES);
+        const keys = Object.keys(activeMap);
         const promises = keys.map(key => {
-          const config = CATEGORY_MAP[key];
+          const config = activeMap[key];
           return fetchMoviesFromPath(config.endpoint, config.params)
             .then(data => ({ key, data }))
             .catch(error => {
@@ -38,7 +40,6 @@ export default function Home() {
           if (data && data.length > 0) {
             newSectionsData[key] = data;
             // Extract first item for Hero, ensuring uniqueness if possible
-            // Simple check: strictly first item
             newHeroItems.push(data[0]);
           }
         });
@@ -54,21 +55,38 @@ export default function Home() {
     };
 
     loadData();
-  }, []);
+  }, [activeTab]);
 
   return (
     <View className="flex-1 bg-[#000000]">
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Simple Transparent Header to avoid collision with Hero */}
       <View className="absolute top-0 left-0 right-0 z-50 px-4 pt-2">
-        <SafeAreaView edges={['top']} className="flex-row justify-between items-center bg-transparent">
-          <Text className="text-xl font-hennyPenny text-primary shadow-black drop-shadow-md">
-            WatchMe
-          </Text>
-          <TouchableOpacity className="bg-black/40 p-2 rounded-full backdrop-blur-md">
-            <Ionicons name="search" size={24} color="#84f906" />
-          </TouchableOpacity>
+        <SafeAreaView edges={['top']} className="bg-transparent flex-row items-center justify-between min-h-[50px]">
+          {/* Left: Logo */}
+          <View className="flex-1 justify-center items-start">
+            <Text className="text-xl font-hennyPenny text-primary shadow-black drop-shadow-md">
+              WatchMe
+            </Text>
+          </View>
+
+          {/* Center: Tabs */}
+          <View className="flex-[2] flex-row justify-center items-center gap-4">
+            {(['movie', 'show', 'anime'] as const).map((tab) => (
+              <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)}>
+                <Text className={`text-sm font-bold uppercase tracking-wider ${activeTab === tab ? 'text-[#00FF41] border-b border-[#00FF41]' : 'text-white/60'}`}>
+                  {tab === 'movie' ? 'MOVIES' : (tab === 'show' ? 'TV' : 'ANIME')}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Right: Search */}
+          <View className="flex-1 justify-center items-end">
+            <TouchableOpacity className="bg-black/40 p-2 rounded-full backdrop-blur-md">
+              <Ionicons name="search" size={20} color="#84f906" />
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
       </View>
 
@@ -93,15 +111,16 @@ export default function Home() {
               <SkeletonRow />
             </>
           ) : (
-            Object.keys(CATEGORY_MAP).map(key => {
+            Object.keys(activeTab === 'movie' ? MOVIE_CATEGORIES : (activeTab === 'show' ? TV_CATEGORIES : ANIME_CATEGORIES)).map(key => {
+              const activeMap = activeTab === 'movie' ? MOVIE_CATEGORIES : (activeTab === 'show' ? TV_CATEGORIES : ANIME_CATEGORIES);
               const movies = sectionsData[key];
               if (!movies || movies.length === 0) return null;
               return (
                 <SectionRow
                   key={key}
-                  title={CATEGORY_MAP[key].title}
+                  title={activeMap[key].title}
                   items={movies}
-                  mediaType={CATEGORY_MAP[key].type}
+                  mediaType={activeMap[key].type}
                   categoryKey={key}
                 />
               );

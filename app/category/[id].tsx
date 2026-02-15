@@ -1,4 +1,4 @@
-import { CATEGORY_MAP } from "@/constants/Categories";
+import { ANIME_CATEGORIES, MOVIE_CATEGORIES, TV_CATEGORIES } from "@/constants/Categories";
 import { Movie, fetchMoviesFromPath } from "@/services/api";
 import { getRoute } from "@/services/simkl";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,7 +10,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function CategoryScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
-    const config = id ? CATEGORY_MAP[id] : null;
+
+    const ALL_CATEGORIES = { ...MOVIE_CATEGORIES, ...TV_CATEGORIES, ...ANIME_CATEGORIES };
+    const config = id ? ALL_CATEGORIES[id] : null;
 
     const [movies, setMovies] = useState<Movie[]>([]);
     const [page, setPage] = useState(1);

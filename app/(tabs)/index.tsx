@@ -4,7 +4,7 @@ import SkeletonRow from "@/components/SkeletonRow";
 import { ANIME_CATEGORIES, MOVIE_CATEGORIES, TV_CATEGORIES } from "@/constants/Categories";
 import { fetchMoviesFromPath, Movie } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -83,7 +83,7 @@ export default function Home() {
 
           {/* Right: Search */}
           <View className="flex-1 justify-center items-end">
-            <TouchableOpacity className="bg-black/40 p-2 rounded-full backdrop-blur-md">
+            <TouchableOpacity onPress={() => router.push('/search')} className="bg-black/40 p-2 rounded-full backdrop-blur-md">
               <Ionicons name="search" size={20} color="#84f906" />
             </TouchableOpacity>
           </View>

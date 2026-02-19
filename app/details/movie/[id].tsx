@@ -2,7 +2,7 @@ import { ActionBar } from '@/components/details/ActionBar';
 import { HeroHeader } from '@/components/details/HeroHeader';
 import { InfoGrid } from '@/components/details/InfoGrid';
 import { getMovieDetails, getRoute } from '@/services/simkl';
-import { Actor, MovieDetail, Recommendation } from '@/types/ui';
+import { MovieDetail, Recommendation } from '@/types/ui';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -82,17 +82,7 @@ export default function MovieDetailScreen() {
         );
     }
 
-    const renderCastItem = ({ item }: { item: Actor }) => (
-        <View style={styles.castItem}>
-            <Image
-                source={{ uri: item.image }}
-                style={styles.castImage}
-                contentFit="cover"
-            />
-            <Text style={styles.castName} numberOfLines={1}>{item.name}</Text>
-            <Text style={styles.castRole} numberOfLines={1}>{item.role}</Text>
-        </View>
-    );
+
 
     const renderRecItem = ({ item }: { item: Recommendation }) => (
         <TouchableOpacity
@@ -163,19 +153,7 @@ export default function MovieDetailScreen() {
                         />
                     </View>
 
-                    {/* Cast */}
-                    {movie.cast.length > 0 && (
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Cast</Text>
-                            <FlatList
-                                horizontal
-                                data={movie.cast}
-                                renderItem={renderCastItem}
-                                keyExtractor={(item) => item.id.toString()}
-                                showsHorizontalScrollIndicator={false}
-                            />
-                        </View>
-                    )}
+
 
                     {/* Recommendations */}
                     {movie.recommendations.length > 0 && (
@@ -248,30 +226,7 @@ const styles = StyleSheet.create({
         marginTop: 8,
         fontWeight: '600',
     },
-    // Cast
-    castItem: {
-        marginRight: 16,
-        width: 80,
-        alignItems: 'center',
-    },
-    castImage: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        marginBottom: 8,
-        backgroundColor: '#333',
-    },
-    castName: {
-        color: '#ffffff',
-        fontSize: 12,
-        fontWeight: '500',
-        textAlign: 'center',
-    },
-    castRole: {
-        color: '#9ca3af',
-        fontSize: 10,
-        textAlign: 'center',
-    },
+
     // Recommendations
     recItem: {
         width: REC_POSTER_WIDTH,

@@ -1,7 +1,6 @@
-import { Actor, SeriesDetail } from '@/types/ui';
-import { Image } from 'expo-image';
+import { SeriesDetail } from '@/types/ui';
 import React, { useState } from 'react';
-import { FlatList, LayoutAnimation, Platform, StyleSheet, Text, TouchableOpacity, UIManager, View } from 'react-native';
+import { LayoutAnimation, Platform, StyleSheet, Text, TouchableOpacity, UIManager, View } from 'react-native';
 
 if (Platform.OS === 'android') {
     if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -21,17 +20,7 @@ export const Overview: React.FC<OverviewProps> = ({ series }) => {
         setExpanded(!expanded);
     };
 
-    const renderCastItem = ({ item }: { item: Actor }) => (
-        <View style={styles.castItem}>
-            <Image
-                source={{ uri: item.image }}
-                style={styles.castImage}
-                contentFit="cover"
-            />
-            <Text style={styles.castName} numberOfLines={1}>{item.name}</Text>
-            <Text style={styles.castRole} numberOfLines={1}>{item.role}</Text>
-        </View>
-    );
+
 
     return (
         <View style={styles.container}>
@@ -71,18 +60,7 @@ export const Overview: React.FC<OverviewProps> = ({ series }) => {
                 )}
             </View>
 
-            {/* Cast */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Cast</Text>
-                <FlatList
-                    horizontal
-                    data={series.cast}
-                    renderItem={renderCastItem}
-                    keyExtractor={(item) => item.id.toString()}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.castList}
-                />
-            </View>
+
         </View>
     );
 };
@@ -132,30 +110,5 @@ const styles = StyleSheet.create({
         marginTop: 8,
         fontWeight: '600',
     },
-    castList: {
-        paddingRight: 20,
-    },
-    castItem: {
-        marginRight: 16,
-        width: 80,
-        alignItems: 'center',
-    },
-    castImage: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        marginBottom: 8,
-        backgroundColor: '#333',
-    },
-    castName: {
-        color: '#ffffff',
-        fontSize: 12,
-        fontWeight: '500',
-        textAlign: 'center',
-    },
-    castRole: {
-        color: '#9ca3af',
-        fontSize: 10,
-        textAlign: 'center',
-    },
+
 });

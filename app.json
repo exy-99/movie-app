@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "WatchMe",
-    "slug": "WatchMe",
+    "slug": "watchme",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icons/app-logo.png",
@@ -44,6 +44,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7ea79157-6563-4476-bc72-0fa4dc8ee87f"
+      }
+    },
+    "owner": "exy-99"
   }
 }
